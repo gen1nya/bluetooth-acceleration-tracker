@@ -1,0 +1,79 @@
+package io.github.kolmakovruslan.bleaccelerationgraph
+
+import android.app.Fragment
+import android.os.Bundle
+import android.os.Environment
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import kotlinx.android.synthetic.main.measuring_fragment.*
+import java.util.*
+import java.io.*
+
+
+/**
+ * Created by 1 on 25.09.2017.
+ */
+class DataFragment: Fragment() {
+    companion object{
+        fun newInstanse(path: String): DataFragment{
+            val fragment = DataFragment()
+            val args = Bundle()
+            fragment.filepath = path
+            fragment.arguments = args
+            return fragment
+        }
+    }
+
+    private var filepath: String = ""
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View
+        = inflater.inflate(R.layout.measuring_fragment, container, false)
+
+    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        val allFiles = try {
+            (reportDir().listFiles()
+                    .filter { file -> file.length() != 0L }
+                    .sortedByDescending(File::lastModified)).toList()}
+        catch (e: Exception){
+            emptyList<File>()
+        }
+        val dataSet = mapRawData(readFromFile(allFiles.find { it.path == filepath }))
+        dataGraph.data = LineData(dataSet)
+        dataGraph.invalidate()
+    }
+
+    private fun readFromFile(file: File?): ByteArray {
+        val data = ByteArray(file?.length()?.toInt()?: 0)
+        try {
+            FileInputStream(file).read(data)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return data
+    }
+
+    private fun mapRawData(byte: ByteArray): LineDataSet {
+        val ints = IntArray(256)
+        for (i in (1..256)) {
+            val index = i * 2
+            ints[i - 1] = byte[index - 1].toInt().shl(8) + byte[index].toInt()
+        }
+        val yVals = ints.mapIndexed { index, value ->
+            Entry(index.toFloat(), value.toFloat())
+        }
+        return LineDataSet(yVals, Date().toString())
+    }
+
+    private fun reportDir(): File {
+        val dir = File(Environment.getExternalStorageDirectory().absolutePath + File.separator + "BleGraph")
+        if (!dir.exists()) dir.mkdir()
+        return dir
+    }
+
+}

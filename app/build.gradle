@@ -21,6 +21,8 @@ dependencies {
         exclude group: 'com.google.android', module: 'android'
     }
     compile "com.github.PhilJay:MPAndroidChart:$chart_version"
+    compile "com.android.support:recyclerview-v7:$support_version"
+    compile 'com.pawegio.kandroid:kandroid:0.6.16@aar'
 }
 
 repositories {
