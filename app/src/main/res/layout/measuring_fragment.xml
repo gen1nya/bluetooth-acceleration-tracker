@@ -1,18 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <RelativeLayout
+        android:id="@+id/vToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@color/colorPrimary">
+        <ImageButton
+            android:src="@drawable/ic_action_back"
+            android:id="@+id/byNav"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@android:color/transparent"/>
+        <TextView
+            android:textColor="@android:color/white"
+            android:layout_marginRight="16dp"
+            android:layout_marginLeft="16dp"
+            android:layout_centerVertical="true"
+            android:layout_toEndOf="@id/byNav"
+            android:layout_toStartOf="@+id/loading"
+            android:id="@+id/title"
+            android:maxLines="2"
+
+            android:textSize="18sp"
+            tools:text ="Поиск устройства"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+        <ProgressBar
+            android:indeterminate="true"
+            android:visibility="invisible"
+            android:padding="10dp"
+            android:id="@+id/loading"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@android:color/transparent"
+            android:layout_toStartOf="@+id/btRefresh"/>
+        <ImageButton
+            android:src="@drawable/ic_action_refresh"
+            android:id="@+id/btRefresh"
+            android:layout_alignParentEnd="true"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@android:color/transparent"/>
+    </RelativeLayout>
+
     <com.github.mikephil.charting.charts.LineChart
+        android:layout_below="@+id/vToolbar"
         android:id="@+id/dataGraph"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
-
-
-    <ProgressBar
-        android:visibility="gone"
-        android:indeterminate="true"
-        android:id="@+id/idPrograss"
-        android:layout_centerInParent="true"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
 
 </RelativeLayout>

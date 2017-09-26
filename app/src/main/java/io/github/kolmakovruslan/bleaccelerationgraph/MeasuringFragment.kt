@@ -33,12 +33,14 @@ class MeasuringFragment: Fragment() {
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        btRefresh.setOnClickListener{ EnableSearchMode() }
+        byNav.setOnClickListener{ activity.fragmentManager.popBackStack() }
         bluetoothManager = activity.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-
         if (!bluetoothManager.adapter.isEnabled) {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
         }
+        title.text = "Поиск устройства..."
         bluetoothManager.adapter.startLeScan(object : BluetoothAdapter.LeScanCallback {
             override fun onLeScan(device: BluetoothDevice?, rssi: Int, scanRecord: ByteArray?) {
                 if (device != null && device.name == "I_LIKE_BLE") {
@@ -52,13 +54,39 @@ class MeasuringFragment: Fragment() {
 
     }
 
+    private fun EnableSearchMode(){
+        title.text = "Поиск устройства..."
+        loading.visibility = View.VISIBLE
+        bluetoothManager.adapter.startLeScan(object : BluetoothAdapter.LeScanCallback {
+            override fun onLeScan(device: BluetoothDevice?, rssi: Int, scanRecord: ByteArray?) {
+                if (device != null && device.name == "I_LIKE_BLE") {
+                    bluetoothManager.adapter.stopLeScan(this)
+                    connect(device)
+                }
+            }
+        })
+    }
+
     private fun connect(device: BluetoothDevice) {
         device.connectGatt(activity.applicationContext, false, object : BluetoothGattCallback() {
 
             override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     gatt?.discoverServices()
+                    title.text = "подключено"
+                    loading.visibility = View.GONE
                 }
+                if (newState == BluetoothProfile.STATE_DISCONNECTED){
+                    title.text = "Отключено"
+                    loading.visibility = View.GONE
+                    toast("соединение потеряно. Поиск...")
+                    EnableSearchMode()
+                }
+                if (newState == BluetoothProfile.STATE_CONNECTING){
+                    title.text = "Подключение..."
+                    loading.visibility = View.VISIBLE
+                }
+
             }
 
             override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
@@ -67,6 +95,7 @@ class MeasuringFragment: Fragment() {
                     val char_indicator = gatt?.services?.find { it.uuid.toString() == "0000fffa-0000-1000-8000-00805f9b34fb" }?.characteristics?.get(0)
                     if (char != null && char_indicator != null) {
                         gatt.setCharacteristicNotification(char_indicator, true)
+                        title.text = "Готов"
                         gatt.readCharacteristic(char)
                     }
                 }
@@ -76,7 +105,8 @@ class MeasuringFragment: Fragment() {
                 if (characteristic != null && status == BluetoothGatt.GATT_SUCCESS &&
                         characteristic.uuid.toString() == "0000ff01-0000-1000-8000-00805f9b34fb") {
                     runOnUiThread {
-                        idPrograss.visibility = View.GONE
+                        loading.visibility = View.GONE
+                        title.text = "Готов"
                         showData(characteristic.value)
                     }
                 } else {
@@ -89,7 +119,8 @@ class MeasuringFragment: Fragment() {
                 if (characteristic != null && characteristic.uuid.toString() == "0000ff00-0000-1000-8000-00805f9b34fb") {
                     gatt?.readCharacteristic(char)
                     runOnUiThread {
-                        idPrograss.visibility = View.VISIBLE
+                        title.text = "Передача данных..."
+                        loading.visibility = View.VISIBLE
                     }
 
                 } else {
@@ -101,7 +132,6 @@ class MeasuringFragment: Fragment() {
 
     private val measurements = mutableListOf<LineDataSet>()
     fun showData(byte: ByteArray) {
-        toast("Новые данные")
         val dataSet = mapRawData(byte)
         writeToFile(byte)
         measurements.add(dataSet)

@@ -3,9 +3,6 @@ package io.github.kolmakovruslan.bleaccelerationgraph
 import android.app.Fragment
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import kotlinx.android.synthetic.main.select_mode_fragment.*
-import android.content.Context.MODE_PRIVATE
-import java.io.OutputStreamWriter
 
 
 class MainActivity : AppCompatActivity() {
@@ -16,11 +13,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if (fragmentManager.backStackEntryCount > 0){
-            fragmentManager.popBackStack()
-        } else {
-            super.onBackPressed()
-        }
+        if (fragmentManager.backStackEntryCount > 0)fragmentManager.popBackStack()
+        else finish()
     }
 
     private fun replaceFragment(fragment: Fragment,
@@ -40,7 +34,7 @@ class MainActivity : AppCompatActivity() {
         replaceFragment(DataListFragment())
     }
 
-    fun navigateToData(path: String) {
-        replaceFragment(DataFragment.newInstanse(path))
+    fun navigateToData(path: String, date: String) {
+        replaceFragment(DataFragment.newInstanse(path, date))
     }
 }

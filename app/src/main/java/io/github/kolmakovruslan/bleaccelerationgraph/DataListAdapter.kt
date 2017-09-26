@@ -5,8 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import com.pawegio.kandroid.inflateLayout
 import kotlinx.android.synthetic.main.item_view_data.view.*
-import org.jetbrains.anko.layoutInflater
-import java.util.ArrayList
+import java.util.*
 
 /**
  * Created by 1 on 25.09.2017.
@@ -17,7 +16,7 @@ data class ModelRWData(
 )
 
 class DataListAdapter(
-        val onClick: (path: String) -> Unit
+        val onClick: (path: String, date: String) -> Unit
 ): RecyclerView.Adapter<DataListAdapter.ViewHolder>() {
     var data: ArrayList<ModelRWData> = arrayListOf()
 
@@ -38,7 +37,7 @@ class DataListAdapter(
         fun bind(item: ModelRWData) {
             itemView.tvTitle.text = item.title
             itemView.setOnClickListener {
-                onClick.invoke(item.path)
+                onClick.invoke(item.path, item.title)
             }
         }
     }

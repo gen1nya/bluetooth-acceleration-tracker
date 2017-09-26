@@ -17,6 +17,7 @@ class SelectModeFragment: Fragment() {
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        vToolbar.title = "Bluetooth graph"
         btGotoMeasuring.setOnClickListener {
             (activity as MainActivity).navigateToMeasuring()
         }

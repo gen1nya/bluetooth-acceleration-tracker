@@ -24,8 +24,12 @@ class DataListFragment: Fragment() {
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val adapter = DataListAdapter({ path ->
-            (activity as MainActivity).navigateToData(path)
+        vToolbar.title = "Измерения"
+        vToolbar.setNavigationIcon(R.drawable.ic_action_back)
+        vToolbar.setNavigationOnClickListener { activity.fragmentManager.popBackStack() }
+
+        val adapter = DataListAdapter({ path, date ->
+            (activity as MainActivity).navigateToData(path, date)
         })
         rvDataList.layoutManager = LinearLayoutManager(activity, LinearLayoutManager.VERTICAL, false)
         rvDataList.adapter = adapter
