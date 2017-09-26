@@ -4,8 +4,6 @@ import android.app.Fragment
 import android.bluetooth.*
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.media.MediaScannerConnection
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
@@ -16,7 +14,6 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import kotlinx.android.synthetic.main.measuring_fragment.*
-import org.jetbrains.anko.act
 import org.jetbrains.anko.runOnUiThread
 import org.jetbrains.anko.toast
 import java.io.File
@@ -114,10 +111,20 @@ class MeasuringFragment: Fragment() {
 
 
     private fun writeToFile(data: ByteArray) {
+        val file = File(getDir(), System.currentTimeMillis().toString())
+        val outputStream = FileOutputStream(file)
+
+        try {
+            outputStream.write(data)
+            outputStream.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            toast("ошибка записи")
+        }
 
     }
 
-    private fun reportDir(): File? {
+    private fun getDir(): File? {
         val dir = File(Environment.getExternalStorageDirectory().absolutePath + File.separator + "BleGraph")
         if (!dir.exists()) dir.mkdir()
         return dir

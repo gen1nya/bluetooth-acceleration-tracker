@@ -7,10 +7,10 @@ import android.support.v7.widget.LinearLayoutManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.github.mikephil.charting.data.LineDataSet
 import kotlinx.android.synthetic.main.data_list_fragment.*
 import java.io.File
-import java.util.ArrayList
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
  * Created by 1 on 25.09.2017.
@@ -37,8 +37,14 @@ class DataListFragment: Fragment() {
             emptyList<File>()
         }
         adapter.setNewData((allFiles.map {
-            ModelRWData(it.lastModified().toString(), it.path.toString())
+            ModelRWData(melisToDatetime(it.lastModified()), it.path.toString())
         }) as ArrayList<ModelRWData>)
+    }
+
+    fun melisToDatetime(milis: Long): String{
+        val sdf = SimpleDateFormat("MMM dd,yyyy HH:mm")
+        val resultdate = Date(milis)
+        return  (sdf.format(resultdate))
     }
 
 
