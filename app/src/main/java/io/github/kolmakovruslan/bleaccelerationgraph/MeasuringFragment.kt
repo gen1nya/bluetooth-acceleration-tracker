@@ -24,8 +24,18 @@ import java.util.*
  * Created by 1 on 25.09.2017.
  */
 class MeasuringFragment: Fragment() {
+    private val DATA_SERVICE_UUID = "0000ffff-0000-1000-8000-00805f9b34fb"
+    private val DATA_VALUE_UUID = "0000ff01-0000-1000-8000-00805f9b34fb"
+
+    private val INDICATE_SERVICE_UUID = "0000fffa-0000-1000-8000-00805f9b34fb"
+    private val INDICATOR_VALUE_UUID = "0000ff00-0000-1000-8000-00805f9b34fb"
+
+    private val DEVICE_NAME = "I_LIKE_BLE"
 
     private val REQUEST_ENABLE_BT = 1
+
+    private var currentFrame: Int = 0
+    private var rawData: ArrayList<Byte> = arrayListOf()
     private lateinit var bluetoothManager: BluetoothManager
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View
@@ -89,7 +99,7 @@ class MeasuringFragment: Fragment() {
 
             }
 
-            override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
+            /*override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     val char = gatt?.services?.find { it.uuid.toString() == "0000ffff-0000-1000-8000-00805f9b34fb" }?.characteristics?.get(0)
                     val char_indicator = gatt?.services?.find { it.uuid.toString() == "0000fffa-0000-1000-8000-00805f9b34fb" }?.characteristics?.get(0)
@@ -123,6 +133,75 @@ class MeasuringFragment: Fragment() {
                         loading.visibility = View.VISIBLE
                     }
 
+                } else {
+                    Log.d("Connect", "onCharacteristicRead")
+                }
+            }*/
+            override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
+                val char = gatt?.services?.find { it.uuid.toString() == DATA_SERVICE_UUID }?.characteristics?.get(0)
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    val char_indicator = gatt?.services?.find { it.uuid.toString() == INDICATE_SERVICE_UUID }?.characteristics?.get(0)
+                    if (char_indicator != null) {
+                        gatt.setCharacteristicNotification(char_indicator, true)
+                        gatt.readCharacteristic(char_indicator)
+                    }
+                }
+            }
+
+            override fun onCharacteristicWrite(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int) {
+                val char = gatt?.services?.find { it.uuid.toString() == DATA_SERVICE_UUID }?.characteristics?.get(0)
+                if (characteristic != null && status == BluetoothGatt.GATT_SUCCESS){
+                    when (characteristic.uuid.toString()){
+                        INDICATOR_VALUE_UUID -> {
+                            Log.i("onWrite", characteristic.value.first().toString())
+                            if (characteristic.value.first() in 0..31) {
+                                gatt?.readCharacteristic(char)
+                            } else {
+                                currentFrame = 0
+                                rawData.clear()
+                            }
+                        }
+                    }
+                }
+                Log.d("Connect", "onCharacteristicWrite")
+            }
+
+            override fun onCharacteristicRead(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int) {
+                if (characteristic != null && status == BluetoothGatt.GATT_SUCCESS){
+                    when (characteristic.uuid.toString()){
+                        DATA_VALUE_UUID -> {
+                            Log.i("onRead", "current Frame is " + currentFrame.toString())
+                            if (currentFrame in 0..31){
+                                currentFrame++
+                                val char_indicator = gatt?.services?.find { it.uuid.toString() == INDICATE_SERVICE_UUID }?.characteristics?.get(0)
+                                char_indicator?.value = kotlin.ByteArray(1,{ currentFrame.toByte() })
+                                gatt?.writeCharacteristic( char_indicator )
+                            } else {
+                                currentFrame = -1
+                            }
+                            rawData.addAll(characteristic.value.map { it })
+                        }
+                    }
+                }
+                Log.d("Connect", "onCharacteristicRead")
+            }
+
+            override fun onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
+                val char = gatt?.services?.find { it.uuid.toString() == DATA_SERVICE_UUID }?.characteristics?.get(0)
+                if (characteristic != null && characteristic.uuid.toString() == INDICATOR_VALUE_UUID) {
+                    if (characteristic.value.first() == 0xff.toByte()){
+                        Log.i("notify", "0xff")
+                        runOnUiThread {
+                            currentFrame = -1
+                            showData(rawData.toByteArray())
+                            rawData.clear()
+                        }
+                    }
+                    if (characteristic.value.first() == 0x00.toByte()){
+                        currentFrame = 0x00
+                        Log.i("notify", "0x00")
+                        gatt?.readCharacteristic(char)
+                    }
                 } else {
                     Log.d("Connect", "onCharacteristicRead")
                 }
@@ -161,8 +240,8 @@ class MeasuringFragment: Fragment() {
     }
 
     private fun mapRawData(byte: ByteArray): LineDataSet {
-        val ints = IntArray(256)
-        for (i in (1..256)) {
+        val ints = IntArray(byte.size /2 -1)
+        for (i in (1..(byte.size /2 -1))) {
             val index = i * 2
             ints[i - 1] = byte[index - 1].toInt().shl(8) + byte[index].toInt()
         }
