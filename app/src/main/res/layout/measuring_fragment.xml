@@ -10,19 +10,29 @@
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:background="@color/colorPrimary">
+
+        <ProgressBar
+            android:id="@+id/pbLoading"
+            android:max="32"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:visibility="invisible"
+            android:layout_alignParentBottom="true"
+            style="@style/Base.Widget.AppCompat.ProgressBar.Horizontal"/>
+
         <ImageButton
             android:src="@drawable/ic_action_back"
             android:id="@+id/byNav"
             android:layout_width="56dp"
             android:layout_height="56dp"
             android:background="@android:color/transparent"/>
+
         <TextView
             android:textColor="@android:color/white"
             android:layout_marginRight="16dp"
             android:layout_marginLeft="16dp"
             android:layout_centerVertical="true"
             android:layout_toEndOf="@id/byNav"
-            android:layout_toStartOf="@+id/loading"
             android:id="@+id/title"
             android:maxLines="2"
 
@@ -30,15 +40,7 @@
             tools:text ="Поиск устройства"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
-        <ProgressBar
-            android:indeterminate="true"
-            android:visibility="invisible"
-            android:padding="10dp"
-            android:id="@+id/loading"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:background="@android:color/transparent"
-            android:layout_toStartOf="@+id/btRefresh"/>
+
         <ImageButton
             android:src="@drawable/ic_action_refresh"
             android:id="@+id/btRefresh"
@@ -46,6 +48,7 @@
             android:layout_width="56dp"
             android:layout_height="56dp"
             android:background="@android:color/transparent"/>
+
     </RelativeLayout>
 
     <com.github.mikephil.charting.charts.LineChart

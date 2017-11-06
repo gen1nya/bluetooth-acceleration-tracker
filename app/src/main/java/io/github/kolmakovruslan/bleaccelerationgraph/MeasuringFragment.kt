@@ -43,30 +43,29 @@ class MeasuringFragment: Fragment() {
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        btRefresh.setOnClickListener{ EnableSearchMode() }
+        btRefresh.setOnClickListener{
+            EnableSearchMode()
+        }
         byNav.setOnClickListener{ activity.fragmentManager.popBackStack() }
         bluetoothManager = activity.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         if (!bluetoothManager.adapter.isEnabled) {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
         }
-        title.text = "Поиск устройства..."
+        title.text =  getString(R.string.searching)
         bluetoothManager.adapter.startLeScan(object : BluetoothAdapter.LeScanCallback {
             override fun onLeScan(device: BluetoothDevice?, rssi: Int, scanRecord: ByteArray?) {
-                if (device != null && device.name == "I_LIKE_BLE") {
+                if (device != null && device.name == DEVICE_NAME) {
                     bluetoothManager.adapter.stopLeScan(this)
                     connect(device)
                 }
             }
         })
 
-
-
     }
 
     private fun EnableSearchMode(){
-        title.text = "Поиск устройства..."
-        loading.visibility = View.VISIBLE
+        runOnUiThread {  title.text =  getString(R.string.searching) }
         bluetoothManager.adapter.startLeScan(object : BluetoothAdapter.LeScanCallback {
             override fun onLeScan(device: BluetoothDevice?, rssi: Int, scanRecord: ByteArray?) {
                 if (device != null && device.name == "I_LIKE_BLE") {
@@ -83,62 +82,19 @@ class MeasuringFragment: Fragment() {
             override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     gatt?.discoverServices()
-                    title.text = "подключено"
-                    loading.visibility = View.GONE
+                    runOnUiThread { title.text = getString(R.string.connected) }
                 }
                 if (newState == BluetoothProfile.STATE_DISCONNECTED){
-                    title.text = "Отключено"
-                    loading.visibility = View.GONE
-                    toast("соединение потеряно. Поиск...")
                     EnableSearchMode()
+                    runOnUiThread { title.text = getString(R.string.disconnected) }
                 }
                 if (newState == BluetoothProfile.STATE_CONNECTING){
-                    title.text = "Подключение..."
-                    loading.visibility = View.VISIBLE
+                    runOnUiThread { title.text = getString(R.string.connecting) }
                 }
 
             }
 
-            /*override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    val char = gatt?.services?.find { it.uuid.toString() == "0000ffff-0000-1000-8000-00805f9b34fb" }?.characteristics?.get(0)
-                    val char_indicator = gatt?.services?.find { it.uuid.toString() == "0000fffa-0000-1000-8000-00805f9b34fb" }?.characteristics?.get(0)
-                    if (char != null && char_indicator != null) {
-                        gatt.setCharacteristicNotification(char_indicator, true)
-                        title.text = "Готов"
-                        gatt.readCharacteristic(char)
-                    }
-                }
-            }
-
-            override fun onCharacteristicRead(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int) {
-                if (characteristic != null && status == BluetoothGatt.GATT_SUCCESS &&
-                        characteristic.uuid.toString() == "0000ff01-0000-1000-8000-00805f9b34fb") {
-                    runOnUiThread {
-                        loading.visibility = View.GONE
-                        title.text = "Готов"
-                        showData(characteristic.value)
-                    }
-                } else {
-                    Log.d("Connect", "onCharacteristicRead")
-                }
-            }
-
-            override fun onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
-                val char = gatt?.services?.find { it.uuid.toString() == "0000ffff-0000-1000-8000-00805f9b34fb" }?.characteristics?.get(0)
-                if (characteristic != null && characteristic.uuid.toString() == "0000ff00-0000-1000-8000-00805f9b34fb") {
-                    gatt?.readCharacteristic(char)
-                    runOnUiThread {
-                        title.text = "Передача данных..."
-                        loading.visibility = View.VISIBLE
-                    }
-
-                } else {
-                    Log.d("Connect", "onCharacteristicRead")
-                }
-            }*/
             override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
-                val char = gatt?.services?.find { it.uuid.toString() == DATA_SERVICE_UUID }?.characteristics?.get(0)
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     val char_indicator = gatt?.services?.find { it.uuid.toString() == INDICATE_SERVICE_UUID }?.characteristics?.get(0)
                     if (char_indicator != null) {
@@ -172,6 +128,7 @@ class MeasuringFragment: Fragment() {
                         DATA_VALUE_UUID -> {
                             Log.i("onRead", "current Frame is " + currentFrame.toString())
                             if (currentFrame in 0..31){
+                                runOnUiThread { pbLoading.progress = currentFrame }
                                 currentFrame++
                                 val char_indicator = gatt?.services?.find { it.uuid.toString() == INDICATE_SERVICE_UUID }?.characteristics?.get(0)
                                 char_indicator?.value = kotlin.ByteArray(1,{ currentFrame.toByte() })
@@ -192,6 +149,8 @@ class MeasuringFragment: Fragment() {
                     if (characteristic.value.first() == 0xff.toByte()){
                         Log.i("notify", "0xff")
                         runOnUiThread {
+                            title.text = getString(R.string.connected)
+                            pbLoading.visibility = View.INVISIBLE
                             currentFrame = -1
                             showData(rawData.toByteArray())
                             rawData.clear()
@@ -200,6 +159,10 @@ class MeasuringFragment: Fragment() {
                     if (characteristic.value.first() == 0x00.toByte()){
                         currentFrame = 0x00
                         Log.i("notify", "0x00")
+                        runOnUiThread {
+                            pbLoading.visibility = View.VISIBLE
+                            title.text = getString(R.string.receiving)
+                        }
                         gatt?.readCharacteristic(char)
                     }
                 } else {
@@ -222,7 +185,6 @@ class MeasuringFragment: Fragment() {
     private fun writeToFile(data: ByteArray) {
         val file = File(getDir(), System.currentTimeMillis().toString())
         val outputStream = FileOutputStream(file)
-
         try {
             outputStream.write(data)
             outputStream.close()
