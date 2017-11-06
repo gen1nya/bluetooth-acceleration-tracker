@@ -68,7 +68,7 @@ class MeasuringFragment: Fragment() {
         runOnUiThread {  title.text =  getString(R.string.searching) }
         bluetoothManager.adapter.startLeScan(object : BluetoothAdapter.LeScanCallback {
             override fun onLeScan(device: BluetoothDevice?, rssi: Int, scanRecord: ByteArray?) {
-                if (device != null && device.name == "I_LIKE_BLE") {
+                if (device != null && device.name == DEVICE_NAME) {
                     bluetoothManager.adapter.stopLeScan(this)
                     connect(device)
                 }
