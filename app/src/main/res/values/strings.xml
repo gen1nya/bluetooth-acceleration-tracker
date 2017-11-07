@@ -1,8 +1,10 @@
 <resources>
     <string name="app_name">BleAccelerationGraph</string>
-    <string name="connected">подключено</string>
-    <string name="receiving">Передача данных...</string>
+    <string name="connected">Подключено</string>
+    <string name="receiving">Передача данных…</string>
     <string name="disconnected">Отключено</string>
-    <string name="connecting">Подключение...</string>
-    <string name="searching">Поиск устройства</string>
+    <string name="connecting">Подключение…</string>
+    <string name="searching">Поиск устройства…</string>
+    <string name="file_write_error">Ошибка записи</string>
+    <string name="dir_name">BleGraph</string>
 </resources>

@@ -8,8 +8,9 @@ import kotlinx.android.synthetic.main.item_view_data.view.*
 import java.util.*
 
 /**
- * Created by 1 on 25.09.2017.
- */
+* author 1
+* since 25.09.2017.
+*/
 data class ModelRWData(
         val title: String,
         val path: String

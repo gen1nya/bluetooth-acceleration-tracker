@@ -67,13 +67,13 @@ class DataFragment: Fragment() {
     }
 
     private fun mapRawData(byte: ByteArray): LineDataSet {
-        val ints = IntArray(256)
-        for (i in (1..256)) {
+        val ints = IntArray(byte.size /2 -1)
+        for (i in (1 until byte.size /2)) {
             val index = i * 2
             ints[i - 1] = byte[index - 1].toInt().shl(8) + byte[index].toInt()
         }
         val yVals = ints.mapIndexed { index, value ->
-            Entry(index.toFloat(), value.toFloat())
+            Entry(index.toFloat() * MeasuringFragment.DATA_RATE, value.toFloat() / MeasuringFragment.G_DIVIDER)
         }
         return LineDataSet(yVals, Date().toString())
     }

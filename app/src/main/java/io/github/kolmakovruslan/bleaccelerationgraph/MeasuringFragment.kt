@@ -24,15 +24,17 @@ import java.util.*
  * Created by 1 on 25.09.2017.
  */
 class MeasuringFragment: Fragment() {
-    private val DATA_SERVICE_UUID = "0000ffff-0000-1000-8000-00805f9b34fb"
-    private val DATA_VALUE_UUID = "0000ff01-0000-1000-8000-00805f9b34fb"
-
-    private val INDICATE_SERVICE_UUID = "0000fffa-0000-1000-8000-00805f9b34fb"
-    private val INDICATOR_VALUE_UUID = "0000ff00-0000-1000-8000-00805f9b34fb"
-
-    private val DEVICE_NAME = "I_LIKE_BLE"
-
-    private val REQUEST_ENABLE_BT = 1
+    companion object {
+        const val DATA_RATE = 10F
+        const val G_DIVIDER = 1.3333334F
+        private const val TAG = "MeasuringFragment"
+        private const val DATA_SERVICE_UUID         = "0000ffff-0000-1000-8000-00805f9b34fb"
+        private const val DATA_VALUE_UUID           = "0000ff01-0000-1000-8000-00805f9b34fb"
+        private const val INDICATE_SERVICE_UUID     = "0000fffa-0000-1000-8000-00805f9b34fb"
+        private const val INDICATOR_VALUE_UUID      = "0000ff00-0000-1000-8000-00805f9b34fb"
+        private const val DEVICE_NAME = "I_LIKE_BLE"
+        private const val REQUEST_ENABLE_BT = 1
+    }
 
     private var currentFrame: Int = 0
     private var rawData: ArrayList<Byte> = arrayListOf()
@@ -44,7 +46,7 @@ class MeasuringFragment: Fragment() {
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         btRefresh.setOnClickListener{
-            EnableSearchMode()
+            enableSearchMode()
         }
         byNav.setOnClickListener{ activity.fragmentManager.popBackStack() }
         bluetoothManager = activity.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
@@ -64,7 +66,7 @@ class MeasuringFragment: Fragment() {
 
     }
 
-    private fun EnableSearchMode(){
+    private fun enableSearchMode(){
         runOnUiThread {  title.text =  getString(R.string.searching) }
         bluetoothManager.adapter.startLeScan(object : BluetoothAdapter.LeScanCallback {
             override fun onLeScan(device: BluetoothDevice?, rssi: Int, scanRecord: ByteArray?) {
@@ -85,7 +87,7 @@ class MeasuringFragment: Fragment() {
                     runOnUiThread { title.text = getString(R.string.connected) }
                 }
                 if (newState == BluetoothProfile.STATE_DISCONNECTED){
-                    EnableSearchMode()
+                    enableSearchMode()
                     runOnUiThread { title.text = getString(R.string.disconnected) }
                 }
                 if (newState == BluetoothProfile.STATE_CONNECTING){
@@ -109,7 +111,7 @@ class MeasuringFragment: Fragment() {
                 if (characteristic != null && status == BluetoothGatt.GATT_SUCCESS){
                     when (characteristic.uuid.toString()){
                         INDICATOR_VALUE_UUID -> {
-                            Log.i("onWrite", characteristic.value.first().toString())
+                            Log.i(TAG, "write: " + characteristic.value.first().toString())
                             if (characteristic.value.first() in 0..31) {
                                 gatt?.readCharacteristic(char)
                             } else {
@@ -119,35 +121,33 @@ class MeasuringFragment: Fragment() {
                         }
                     }
                 }
-                Log.d("Connect", "onCharacteristicWrite")
+                Log.d(TAG, "onCharacteristicWrite")
             }
 
             override fun onCharacteristicRead(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int) {
                 if (characteristic != null && status == BluetoothGatt.GATT_SUCCESS){
-                    when (characteristic.uuid.toString()){
-                        DATA_VALUE_UUID -> {
-                            Log.i("onRead", "current Frame is " + currentFrame.toString())
-                            if (currentFrame in 0..31){
-                                runOnUiThread { pbLoading.progress = currentFrame }
-                                currentFrame++
-                                val char_indicator = gatt?.services?.find { it.uuid.toString() == INDICATE_SERVICE_UUID }?.characteristics?.get(0)
-                                char_indicator?.value = kotlin.ByteArray(1,{ currentFrame.toByte() })
-                                gatt?.writeCharacteristic( char_indicator )
-                            } else {
-                                currentFrame = -1
-                            }
-                            rawData.addAll(characteristic.value.map { it })
+                    if (characteristic.uuid.toString() == DATA_VALUE_UUID) {
+                        Log.i(TAG, "current Frame is " + currentFrame.toString())
+                        if (currentFrame in 0..31){
+                            runOnUiThread { pbLoading.progress = currentFrame }
+                            currentFrame++
+                            val char_indicator = gatt?.services?.find { it.uuid.toString() == INDICATE_SERVICE_UUID }?.characteristics?.get(0)
+                            char_indicator?.value = kotlin.ByteArray(1,{ currentFrame.toByte() })
+                            gatt?.writeCharacteristic( char_indicator )
+                        } else {
+                            currentFrame = -1
                         }
+                        rawData.addAll(characteristic.value.map { it })
                     }
                 }
-                Log.d("Connect", "onCharacteristicRead")
+                Log.d(TAG, "onCharacteristicRead")
             }
 
             override fun onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
                 val char = gatt?.services?.find { it.uuid.toString() == DATA_SERVICE_UUID }?.characteristics?.get(0)
                 if (characteristic != null && characteristic.uuid.toString() == INDICATOR_VALUE_UUID) {
                     if (characteristic.value.first() == 0xff.toByte()){
-                        Log.i("notify", "0xff")
+                        Log.i(TAG, "notify 0xff")
                         runOnUiThread {
                             title.text = getString(R.string.connected)
                             pbLoading.visibility = View.INVISIBLE
@@ -158,7 +158,7 @@ class MeasuringFragment: Fragment() {
                     }
                     if (characteristic.value.first() == 0x00.toByte()){
                         currentFrame = 0x00
-                        Log.i("notify", "0x00")
+                        Log.i(TAG, "notify 0x00")
                         runOnUiThread {
                             pbLoading.visibility = View.VISIBLE
                             title.text = getString(R.string.receiving)
@@ -166,17 +166,15 @@ class MeasuringFragment: Fragment() {
                         gatt?.readCharacteristic(char)
                     }
                 } else {
-                    Log.d("Connect", "onCharacteristicRead")
+                    Log.d(TAG, "onCharacteristicRead")
                 }
             }
         })
     }
 
-    private val measurements = mutableListOf<LineDataSet>()
     fun showData(byte: ByteArray) {
         val dataSet = mapRawData(byte)
         writeToFile(byte)
-        measurements.add(dataSet)
         dataGraph.data = LineData(dataSet)
         dataGraph.invalidate()
     }
@@ -190,13 +188,13 @@ class MeasuringFragment: Fragment() {
             outputStream.close()
         } catch (e: Exception) {
             e.printStackTrace()
-            toast("ошибка записи")
+            toast(getString(R.string.file_write_error))
         }
 
     }
 
     private fun getDir(): File? {
-        val dir = File(Environment.getExternalStorageDirectory().absolutePath + File.separator + "BleGraph")
+        val dir = File(Environment.getExternalStorageDirectory().absolutePath + File.separator + getString(R.string.dir_name))
         if (!dir.exists()) dir.mkdir()
         return dir
     }
@@ -208,7 +206,7 @@ class MeasuringFragment: Fragment() {
             ints[i - 1] = byte[index - 1].toInt().shl(8) + byte[index].toInt()
         }
         val yVals = ints.mapIndexed { index, value ->
-            Entry(index.toFloat(), value.toFloat())
+            Entry(index.toFloat() * DATA_RATE , value.toFloat() / G_DIVIDER)
         }
         return LineDataSet(yVals, Date().toString())
     }
